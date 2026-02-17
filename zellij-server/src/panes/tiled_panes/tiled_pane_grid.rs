@@ -25,6 +25,41 @@ fn no_pane_id(pane_id: &PaneId) -> String {
     format!("no floating pane with ID {:?} found", pane_id)
 }
 
+/// For each stack, compute the (min_y, x) of the topmost pane.
+/// Used to sort stacked panes as a contiguous group in cycle order.
+fn compute_stack_tops(panes: &[(&PaneId, &&mut Box<dyn Pane>)]) -> HashMap<usize, (usize, usize)> {
+    let mut tops: HashMap<usize, (usize, usize)> = HashMap::new();
+    for (_, p) in panes {
+        let geom = p.position_and_size();
+        if let Some(stack_id) = geom.stacked {
+            let entry = tops.entry(stack_id).or_insert((geom.y, geom.x));
+            if geom.y < entry.0 {
+                entry.0 = geom.y;
+            }
+        }
+    }
+    tops
+}
+
+/// Sort key for pane cycle order.
+/// Stacked panes sort by (stack_top_y, stack_x, pane_y) so all panes in a
+/// stack are contiguous and ordered top-to-bottom within the group.
+/// Non-stacked panes sort by (pane_y, pane_x, 0).
+fn cycle_sort_key(
+    geom: &PaneGeom,
+    stack_tops: &HashMap<usize, (usize, usize)>,
+) -> (usize, usize, usize) {
+    match geom.stacked {
+        Some(stack_id) => {
+            let &(stack_y, stack_x) = stack_tops
+                .get(&stack_id)
+                .unwrap_or(&(geom.y, geom.x));
+            (stack_y, stack_x, geom.y)
+        },
+        None => (geom.y, geom.x, 0),
+    }
+}
+
 pub struct TiledPaneGrid<'a> {
     panes: Rc<RefCell<HashMap<PaneId, &'a mut Box<dyn Pane>>>>,
     display_area: Size, // includes all panes (including eg. the status bar and tab bar in the default layout)
@@ -870,12 +905,10 @@ impl<'a> TiledPaneGrid<'a> {
         let panes = self.panes.borrow();
         let mut panes: Vec<(&PaneId, &&mut Box<dyn Pane>)> =
             panes.iter().filter(|(_, p)| p.selectable()).collect();
+        let stack_tops = compute_stack_tops(&panes);
         panes.sort_by(|(_a_id, a_pane), (_b_id, b_pane)| {
-            if a_pane.y() == b_pane.y() {
-                a_pane.x().cmp(&b_pane.x())
-            } else {
-                a_pane.y().cmp(&b_pane.y())
-            }
+            cycle_sort_key(&a_pane.position_and_size(), &stack_tops)
+                .cmp(&cycle_sort_key(&b_pane.position_and_size(), &stack_tops))
         });
         let active_pane_position = panes
             .iter()
@@ -894,12 +927,10 @@ impl<'a> TiledPaneGrid<'a> {
         let panes = self.panes.borrow();
         let mut panes: Vec<(&PaneId, &&mut Box<dyn Pane>)> =
             panes.iter().filter(|(_, p)| p.selectable()).collect();
+        let stack_tops = compute_stack_tops(&panes);
         panes.sort_by(|(_a_id, a_pane), (_b_id, b_pane)| {
-            if a_pane.y() == b_pane.y() {
-                a_pane.x().cmp(&b_pane.x())
-            } else {
-                a_pane.y().cmp(&b_pane.y())
-            }
+            cycle_sort_key(&a_pane.position_and_size(), &stack_tops)
+                .cmp(&cycle_sort_key(&b_pane.position_and_size(), &stack_tops))
         });
         let last_pane = panes.last().unwrap();
         let active_pane_position = panes
