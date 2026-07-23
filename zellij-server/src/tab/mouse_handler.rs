@@ -1252,14 +1252,6 @@ impl MouseHandler {
 
         if event.wheel_up || event.wheel_down {
             if let Some(pane_id) = ctx.pane_id_at_position {
-                if event.ctrl {
-                    if event.wheel_up {
-                        return Ok(MouseAction::ResizeScrollUp { pane_id });
-                    }
-                    if event.wheel_down {
-                        return Ok(MouseAction::ResizeScrollDown { pane_id });
-                    }
-                }
                 if event.wheel_up {
                     return Ok(MouseAction::ScrollUp { pane_id, lines: 3 });
                 }

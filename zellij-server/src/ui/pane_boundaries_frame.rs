@@ -778,9 +778,9 @@ impl PaneFrame {
 
     fn help_text_version_full(&self, max_length: usize) -> Option<(Vec<TerminalCharacter>, usize)> {
         let text = if self.is_floating {
-            " Ctrl <MouseScroll> or Ctrl <drag borders> to resize "
+            " Ctrl <drag borders> to resize "
         } else {
-            " Ctrl <MouseScroll> or <drag borders> to resize "
+            " <drag borders> to resize "
         };
         let len = text.chars().count();
         if len <= max_length {
@@ -795,9 +795,9 @@ impl PaneFrame {
         max_length: usize,
     ) -> Option<(Vec<TerminalCharacter>, usize)> {
         let text = if self.is_floating {
-            " <Ctrl MouseScroll/drag borders> resize "
+            " <Ctrl drag borders> resize "
         } else {
-            " <Ctrl MouseScroll>/<drag borders> resize "
+            " <drag borders> resize "
         };
         let len = text.chars().count();
         if len <= max_length {
@@ -812,9 +812,9 @@ impl PaneFrame {
         max_length: usize,
     ) -> Option<(Vec<TerminalCharacter>, usize)> {
         let text = if self.is_floating {
-            " <Ctrl MouseScroll/drag borders> "
+            " <Ctrl drag borders> "
         } else {
-            " <Ctrl MouseScroll>/<drag borders> "
+            " <drag borders> "
         };
         let len = text.chars().count();
         if len <= max_length {
